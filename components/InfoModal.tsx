@@ -61,12 +61,12 @@ const InfoModal = ({ isOpen, onClose }: InfoModalProps) => {
                     Яг юу мэдмээр байгаагаа ойлгомжтой, товчхон бичих нь чухал.
                   </p>
                   <p>
-                    <strong>Буруу хэрэглээ:</strong> "Надад туслаач." "Shine
-                    ajiltnii anhaarah zuil"
+                    <strong>Буруу хэрэглээ:</strong> &quot;Надад туслаач.&quot; &quot;Shine
+                    ajiltnii anhaarah zuil&quot;
                   </p>
                   <p>
-                    <strong>Зөв хэрэглээ:</strong> "Компанийн шинэ ажилтны
-                    сургалтын хугацаа хэдэн өдөр вэ?"
+                    <strong>Зөв хэрэглээ:</strong> &quot;Компанийн шинэ ажилтны
+                    сургалтын хугацаа хэдэн өдөр вэ?&quot;
                   </p>
                 </li>
 
@@ -83,12 +83,12 @@ const InfoModal = ({ isOpen, onClose }: InfoModalProps) => {
                   </p>
                   <ul className="list-disc pl-6 space-y-1">
                     <li>
-                      "2024 оны үйл ажиллагааны тайлан дахь гол үзүүлэлтүүдийг
-                      жагсаа."
+                      &quot;2024 оны үйл ажиллагааны тайлан дахь гол үзүүлэлтүүдийг
+                      жагсаа.&quot;
                     </li>
                     <li>
-                      "Маркетингийн стратегийн баримт бичиг дэх зорилтот
-                      хэрэглэгчийн тодорхойлолтыг хэлж өг."
+                      &quot;Маркетингийн стратегийн баримт бичиг дэх зорилтот
+                      хэрэглэгчийн тодорхойлолтыг хэлж өг.&quot;
                     </li>
                   </ul>
                 </li>
@@ -102,8 +102,8 @@ const InfoModal = ({ isOpen, onClose }: InfoModalProps) => {
                     болно.
                   </p>
                   <p>
-                    <strong>Жишээ:</strong> "'Sales_Guide_2023.pdf'-д байгаа
-                    борлуулалтын үе шатуудыг жагсаа."
+                    <strong>Жишээ:</strong> &quot;Sales_Guide_2023.pdf-д байгаа
+                    борлуулалтын үе шатуудыг жагсаа.&quot;
                   </p>
                 </li>
 

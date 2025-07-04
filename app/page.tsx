@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
 import TopNav from "../components/TopNav";
 import InputBox from "../components/InputBox";
 import ChatContainer, { ChatContainerRef } from "../components/ChatContainer";
@@ -19,6 +18,11 @@ interface Message {
   skipAnimation?: boolean;
 }
 
+interface ChatHistoryEntry {
+  question: string;
+  answer: string;
+}
+
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [historyMessages, setHistoryMessages] = useState<Message[]>([]);
@@ -30,7 +34,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const chatContainerRef = useRef<ChatContainerRef>(null);
-  const router = useRouter();
 
   // Load chat history
   useEffect(() => {
@@ -39,7 +42,7 @@ export default function Home() {
       try {
         const data = await fetchChatHistory();
         const historyMessages = data.chat_history
-          .map((entry: any) => [
+          .map((entry: ChatHistoryEntry) => [
             {
               id: `${entry.question}-${Date.now()}`,
               text: entry.question,
@@ -172,7 +175,6 @@ export default function Home() {
 
   const shouldDisableInput = isGenerating || isTyping;
 
-  // Move early returns after all hooks
   if (isLoading) {
     return <div>Loading...</div>;
   }

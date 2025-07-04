@@ -1,18 +1,16 @@
-// components/BotMessage.tsx
 import {
   useState,
   useEffect,
   useRef,
   useImperativeHandle,
   forwardRef,
+  useCallback,
 } from "react";
 import { motion } from "framer-motion";
 import clsx from "clsx";
-import { formatMessageTimestamp } from "../utils/dateUtils";
 
 interface BotMessageProps {
   message: string;
-  timestamp?: number;
   isGenerating?: boolean;
   skipTypingAnimation?: boolean;
   onTypingComplete?: () => void;
@@ -42,7 +40,6 @@ const BotMessage = forwardRef<BotMessageRef, BotMessageProps>(
   (
     {
       message,
-      timestamp,
       isGenerating = false,
       skipTypingAnimation = false,
       onTypingComplete,
@@ -57,7 +54,7 @@ const BotMessage = forwardRef<BotMessageRef, BotMessageProps>(
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const completedRef = useRef(false);
 
-    const finish = () => {
+    const finish = useCallback(() => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -65,9 +62,9 @@ const BotMessage = forwardRef<BotMessageRef, BotMessageProps>(
       setIsTyping(false);
       if (!completedRef.current) {
         completedRef.current = true;
-        onTypingComplete && onTypingComplete();
+        onTypingComplete?.();
       }
-    };
+    }, [onTypingComplete]);
 
     useImperativeHandle(ref, () => ({
       stopTyping: () => {
@@ -86,12 +83,11 @@ const BotMessage = forwardRef<BotMessageRef, BotMessageProps>(
 
     useEffect(() => {
       if (skipTypingAnimation) {
-        // Immediately show full message without typing effect
         setDisplayedText(message);
         setIsTyping(false);
         if (!completedRef.current) {
           completedRef.current = true;
-          onTypingComplete && onTypingComplete();
+          onTypingComplete?.();
         }
         return;
       }
@@ -104,7 +100,7 @@ const BotMessage = forwardRef<BotMessageRef, BotMessageProps>(
       setIsTyping(true);
       setDisplayedText("");
 
-      const textContent = message.replace(/<[^>]+>/g, ""); // Strip HTML for typing
+      const textContent = message.replace(/<[^>]+>/g, "");
       const totalLength = textContent.length;
 
       intervalRef.current = setInterval(() => {
@@ -118,7 +114,7 @@ const BotMessage = forwardRef<BotMessageRef, BotMessageProps>(
           setDisplayedText((prev) => prev + nextChar);
           index++;
         } else {
-          setDisplayedText(message); // Show full HTML when done
+          setDisplayedText(message);
           finish();
         }
       }, 10);
@@ -129,7 +125,7 @@ const BotMessage = forwardRef<BotMessageRef, BotMessageProps>(
           intervalRef.current = null;
         }
       };
-    }, [message, isGenerating, isStopped, skipTypingAnimation]);
+    }, [message, isGenerating, isStopped, skipTypingAnimation, finish, onTypingComplete]);
 
     return (
       <motion.div
@@ -146,7 +142,7 @@ const BotMessage = forwardRef<BotMessageRef, BotMessageProps>(
             shouldExpandWidth ? "w-full" : "max-w-[100%]"
           )}
         >
-          {isGenerating ? (
+          {isGenerating || isTyping ? (
             <TypingAnimation />
           ) : (
             <div

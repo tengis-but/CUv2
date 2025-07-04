@@ -17,13 +17,13 @@ export async function login(gmail: string, password: string) {
     try {
       const errorData = JSON.parse(responseText);
       throw new Error(errorData.error || "Login failed");
-    } catch (parseError) {
+    } catch {
       throw new Error(responseText || "Login failed");
     }
   }
   try {
     return JSON.parse(responseText);
-  } catch (parseError) {
+  } catch {
     throw new Error("Invalid JSON response from /login");
   }
 }
@@ -46,7 +46,7 @@ export async function login2(gmail: string, password: string) {
     throw new Error(responseData.error || "Login failed");
   }
 
-  return responseData; // Returns { success, message, user: { usersid, roleid } }
+  return responseData;
 }
 
 export async function askQuestion(question: string) {
@@ -66,13 +66,13 @@ export async function askQuestion(question: string) {
     try {
       const errorData = JSON.parse(responseText);
       throw new Error(errorData.error || "Failed to ask question");
-    } catch (parseError) {
+    } catch {
       throw new Error(responseText || "Failed to ask question");
     }
   }
   try {
     return JSON.parse(responseText);
-  } catch (parseError) {
+  } catch {
     throw new Error("Invalid JSON response from /ask");
   }
 }

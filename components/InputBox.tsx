@@ -1,10 +1,8 @@
-// components/InputBox.tsx
 import { useState, useRef, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { FileText, ArrowUpCircle, X, Paperclip, Square } from "lucide-react";
 import clsx from "clsx";
 import { uploadFile, checkProgress } from "../src/lib/api";
-import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface FilePreview {
@@ -39,7 +37,6 @@ const InputBox = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisData>({});
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const router = useRouter();
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -64,7 +61,6 @@ const InputBox = ({
       try {
         const data = await uploadFile(file);
         if (data.session_id) {
-          // For PDFs, track progress
           const interval = setInterval(async () => {
             try {
               const progressData = await checkProgress(data.session_id);
@@ -83,11 +79,10 @@ const InputBox = ({
             }
           }, 1000);
         } else if (data.analysis) {
-          // For images, show modal with analysis
           setAnalysis(data.analysis);
           setUploadProgress("Image uploaded, editing metadata...");
           setIsModalOpen(true);
-          setTimeout(() => setFiles([]), 2000); // Clear file after modal interaction
+          setTimeout(() => setFiles([]), 2000);
         } else {
           setUploadProgress("Image uploaded and analyzed");
           setTimeout(() => setFiles([]), 2000);
@@ -136,7 +131,6 @@ const InputBox = ({
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to save metadata");
-      const data = await response.json();
       setIsModalOpen(false);
       setUploadProgress("Metadata saved successfully");
     } catch (error) {

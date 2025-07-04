@@ -1,4 +1,3 @@
-// components/ChatContainer.tsx
 import {
   useRef,
   useEffect,
@@ -33,7 +32,7 @@ const ChatContainerComponent = forwardRef<ChatContainerRef, ChatContainerProps>(
     const bottomRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const botMessageRefs = useRef<Map<string, BotMessageRef>>(new Map());
-    const messageCounter = useRef(0); // Counter to ensure uniqueness
+    const messageCounter = useRef(0);
     const userScrolledUpRef = useRef(false);
 
     useImperativeHandle(ref, () => ({
@@ -51,24 +50,12 @@ const ChatContainerComponent = forwardRef<ChatContainerRef, ChatContainerProps>(
       },
     }));
 
-    // Function to scroll to bottom (only if user hasn't scrolled up)
     const scrollToBottom = () => {
       if (!userScrolledUpRef.current && bottomRef.current) {
         bottomRef.current.scrollIntoView({ behavior: "smooth" });
       }
     };
 
-    // Check if user is near the bottom (within 100px threshold)
-    const isNearBottom = () => {
-      const container = containerRef.current;
-      if (!container) return true;
-
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
-      return distanceFromBottom <= 100; // 100px threshold as requested
-    };
-
-    // Set up scroll event listener to track user scroll behavior
     useEffect(() => {
       const container = containerRef.current;
       if (!container) return;
@@ -76,20 +63,10 @@ const ChatContainerComponent = forwardRef<ChatContainerRef, ChatContainerProps>(
       const handleScroll = () => {
         const { scrollTop, scrollHeight, clientHeight } = container;
         const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
-
-        // Update userScrolledUp based on position relative to bottom
-        if (distanceFromBottom <= 100) {
-          // User is near bottom - resume auto-scrolling
-          userScrolledUpRef.current = false;
-        } else {
-          // User has scrolled up - disable auto-scrolling
-          userScrolledUpRef.current = true;
-        }
+        userScrolledUpRef.current = distanceFromBottom > 100;
       };
 
       container.addEventListener("scroll", handleScroll);
-
-      // Initial check
       handleScroll();
 
       return () => {
@@ -97,14 +74,14 @@ const ChatContainerComponent = forwardRef<ChatContainerRef, ChatContainerProps>(
       };
     }, []);
 
-    // Auto-scroll when messages change (only if user hasn't scrolled up)
     useEffect(() => {
       scrollToBottom();
     }, [messages]);
 
     useEffect(() => {
+      const currentRefs = botMessageRefs.current;
       return () => {
-        botMessageRefs.current.clear();
+        currentRefs.clear();
       };
     }, []);
 
@@ -132,7 +109,6 @@ const ChatContainerComponent = forwardRef<ChatContainerRef, ChatContainerProps>(
                 }
               }}
               message={message.text}
-              timestamp={message.timestamp}
               isGenerating={message.isGenerating}
               skipTypingAnimation={message.skipAnimation}
               onTypingComplete={onTypingComplete}

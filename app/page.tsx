@@ -1,7 +1,6 @@
-// app/page.tsx
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import TopNav from "../components/TopNav";
@@ -17,95 +16,139 @@ interface Message {
   isUser: boolean;
   timestamp: number;
   isGenerating?: boolean;
+  skipAnimation?: boolean;
 }
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [historyMessages, setHistoryMessages] = useState<Message[]>([]);
+  const [historyVisible, setHistoryVisible] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const chatContainerRef = useRef<ChatContainerRef>(null);
   const router = useRouter();
 
-  // Check authentication and load chat history
+  // Load chat history
   useEffect(() => {
-    const loadChatHistory = async () => {
+    const loadHistory = async () => {
+      setIsLoading(true);
       try {
         const data = await fetchChatHistory();
-        const historyMessages = data.chat_history.map((entry: any) => [
-          {
-            id: `${entry.question}-${Date.now()}`,
-            text: entry.question,
-            isUser: true,
-            timestamp: Date.now(),
-          },
-          {
-            id: `${entry.answer}-${Date.now()}`,
-            text: entry.answer,
-            isUser: false,
-            timestamp: Date.now(),
-          },
-        ]).flat();
-        setMessages(historyMessages);
+        const historyMessages = data.chat_history
+          .map((entry: any) => [
+            {
+              id: `${entry.question}-${Date.now()}`,
+              text: entry.question,
+              isUser: true,
+              timestamp: Date.now(),
+            },
+            {
+              id: `${entry.answer}-${Date.now()}`,
+              text: entry.answer,
+              isUser: false,
+              timestamp: Date.now(),
+              skipAnimation: true,
+            },
+          ])
+          .flat();
+        setHistoryMessages(historyMessages);
       } catch (error) {
         console.error("Failed to load chat history:", error);
-        router.push("/login"); // Redirect to login if unauthorized
+        setError("Failed to load chat history. Please try again.");
+      } finally {
+        setIsLoading(false);
       }
     };
-    loadChatHistory();
-  }, [router]);
+    loadHistory();
+  }, []);
 
-const handleSendMessage = async (text: string) => {
-  console.log("Sending question:", text);
-  const newMessage: Message = {
-    id: Date.now().toString(),
-    text,
-    isUser: true,
-    timestamp: Date.now(),
-  };
+  const handleSendMessage = useCallback(
+    async (text: string) => {
+      console.log("Sending question:", text);
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        text,
+        isUser: true,
+        timestamp: Date.now(),
+      };
 
-  const botMessage: Message = {
-    id: (Date.now() + 1).toString(),
-    text: "",
-    isUser: false,
-    timestamp: Date.now(),
-    isGenerating: true,
-  };
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "",
+        isUser: false,
+        timestamp: Date.now(),
+        isGenerating: true,
+      };
 
-  setMessages((prev) => {
-    const uniquePrev = prev.filter((msg) => msg.id !== newMessage.id && msg.id !== botMessage.id);
-    return [...uniquePrev, newMessage, botMessage];
-  });
-  setIsGenerating(true);
+      setMessages((prev) => {
+        const baseMessages = historyVisible
+          ? prev
+          : [...historyMessages, ...prev];
+        const uniqueBase = baseMessages.filter(
+          (msg) => msg.id !== newMessage.id && msg.id !== botMessage.id
+        );
+        const updatedBase = uniqueBase.map((msg) => {
+          if (!msg.isUser && !msg.skipAnimation && !msg.isGenerating) {
+            return { ...msg, skipAnimation: true };
+          }
+          return msg;
+        });
+        return [...updatedBase, newMessage, botMessage];
+      });
+      setIsGenerating(true);
+      if (!historyVisible) setHistoryVisible(true);
 
-  try {
-    console.log("Calling askQuestion...");
-    const data = await askQuestion(text);
-    console.log("Received response data:", data); // Log full response
-    setMessages((prev) => {
-      const updatedMessages = prev.map((msg) =>
-        msg.id === botMessage.id ? { ...msg, text: data.response || "No response from server", isGenerating: false } : msg
-      );
-      console.log("Updated messages state:", updatedMessages); // Log updated state
-      return updatedMessages;
-    });
-    setIsTyping(true);
-  } catch (error) {
-    console.error("Error asking question:", error);
-    setMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === botMessage.id
-          ? { ...msg, text: `Error: ${(error as Error).message}`, isGenerating: false }
-          : msg
-      )
-    );
-  } finally {
-    setIsGenerating(false);
-  }
-};
+      try {
+        console.log("Calling askQuestion...");
+        const data = await askQuestion(text);
+        console.log("Received response data:", data);
+        setMessages((prev) => {
+          const updatedMessages = prev.map((msg) => {
+            if (msg.id === botMessage.id) {
+              return {
+                ...msg,
+                text: data.response || "No response from server",
+                isGenerating: false,
+                skipAnimation: false,
+              };
+            } else if (!msg.isUser && !msg.skipAnimation && !msg.isGenerating) {
+              return { ...msg, skipAnimation: true };
+            }
+            return msg;
+          });
+          console.log("Updated messages state:", updatedMessages);
+          return updatedMessages;
+        });
+        setIsTyping(true);
+      } catch (error) {
+        console.error("Error asking question:", error);
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id === botMessage.id) {
+              return {
+                ...msg,
+                text: `Error: ${(error as Error).message}`,
+                isGenerating: false,
+                skipAnimation: false,
+              };
+            } else if (!msg.isUser && !msg.skipAnimation && !msg.isGenerating) {
+              return { ...msg, skipAnimation: true };
+            }
+            return msg;
+          })
+        );
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [historyMessages, historyVisible]
+  );
 
-  const handleStopGeneration = () => {
+  const handleStopGeneration = useCallback(() => {
     if (isTyping && chatContainerRef.current) {
       chatContainerRef.current.stopCurrentTyping();
     } else {
@@ -113,20 +156,34 @@ const handleSendMessage = async (text: string) => {
     }
     setIsGenerating(false);
     setIsTyping(false);
-  };
+  }, [isTyping]);
 
-  const handleResetChat = () => {
+  const handleResetChat = useCallback(() => {
     setMessages([]);
     setInputMessage("");
     setIsGenerating(false);
     setIsTyping(false);
-  };
+    setHistoryVisible(false);
+  }, []);
 
-  const handleTypingComplete = () => {
+  const handleTypingComplete = useCallback(() => {
     setIsTyping(false);
-  };
+  }, []);
 
   const shouldDisableInput = isGenerating || isTyping;
+
+  // Move early returns after all hooks
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#171717]">
+        <div className="text-red-500">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-white dark:bg-[#171717] text-gray-900 dark:text-[#eaeaea]">

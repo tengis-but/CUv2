@@ -5,6 +5,7 @@ import { FileText, ArrowUpCircle, X, Paperclip, Square } from "lucide-react";
 import clsx from "clsx";
 import { uploadFile, checkProgress } from "../src/lib/api";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface FilePreview {
   name: string;
@@ -70,7 +71,9 @@ const InputBox = ({
               setUploadProgress(`Processing: ${progressData.progress}%`);
               if (progressData.progress >= 100 || progressData.error) {
                 clearInterval(interval);
-                setUploadProgress(progressData.error ? "Error occurred" : "Upload complete");
+                setUploadProgress(
+                  progressData.error ? "Error occurred" : "Upload complete"
+                );
                 setTimeout(() => setFiles([]), 2000);
               }
             } catch (error) {
@@ -182,60 +185,110 @@ const InputBox = ({
         </div>
       )}
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="relative w-full max-w-md p-6 bg-white dark:bg-[#0e0e0e] rounded-lg shadow-lg">
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 text-gray-600 dark:text-[#eaeaea] hover:text-gray-900 dark:hover:text-white"
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div
+            key="metadata-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-hidden"
+          >
+            <motion.div
+              key="metadata-modal"
+              initial={{ y: 20, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="relative w-full max-w-[640px] max-h-[80vh] overflow-y-auto hide-scrollbar bg-white dark:bg-[#0e0e0e] rounded-xl shadow-lg p-8 text-gray-900 dark:text-[#eaeaea]"
             >
-              <X className="w-6 h-6" />
-            </button>
-            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-[#eaeaea]">Image Metadata</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-gray-700 dark:text-[#eaeaea]/70 mb-2">Detected Language</label>
-                <input
-                  type="text"
-                  value={analysis.detected_language || ""}
-                  onChange={(e) => setAnalysis({ ...analysis, detected_language: e.target.value })}
-                  className="w-full p-2 rounded border border-gray-300 dark:border-white/10 bg-transparent text-gray-900 dark:text-[#eaeaea]"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 dark:text-[#eaeaea]/70 mb-2">Extracted Text</label>
-                <textarea
-                  value={analysis.extracted_text || ""}
-                  onChange={(e) => setAnalysis({ ...analysis, extracted_text: e.target.value })}
-                  className="w-full p-2 rounded border border-gray-300 dark:border-white/10 bg-transparent text-gray-900 dark:text-[#eaeaea] h-24"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 dark:text-[#eaeaea]/70 mb-2">Explanation</label>
-                <textarea
-                  value={analysis.explanation || ""}
-                  onChange={(e) => setAnalysis({ ...analysis, explanation: e.target.value })}
-                  className="w-full p-2 rounded border border-gray-300 dark:border-white/10 bg-transparent text-gray-900 dark:text-[#eaeaea] h-24"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 dark:text-[#eaeaea]/70 mb-2">Numerical Data</label>
-                <textarea
-                  value={analysis.numerical_data || ""}
-                  onChange={(e) => setAnalysis({ ...analysis, numerical_data: e.target.value })}
-                  className="w-full p-2 rounded border border-gray-300 dark:border-white/10 bg-transparent text-gray-900 dark:text-[#eaeaea] h-24"
-                />
-              </div>
               <button
-                onClick={saveMetadata}
-                className="w-full p-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors mt-4"
+                onClick={() => setIsModalOpen(false)}
+                className="absolute top-4 right-4 p-1.5 text-gray-600 dark:text-[#eaeaea]/60 hover:text-gray-900 dark:hover:text-[#eaeaea] transition-colors cursor-pointer"
+                aria-label="Close metadata modal"
               >
-                Save
+                <X className="w-5 h-5" />
               </button>
-            </div>
-          </div>
-        </div>
-      )}
+
+              <h2 className="text-xl font-semibold mb-6 text-center">
+                Edit Image Metadata
+              </h2>
+
+              <div className="space-y-6 text-[15px]">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-[#eaeaea]/70">
+                    Detected Language
+                  </label>
+                  <input
+                    type="text"
+                    value={analysis.detected_language || ""}
+                    onChange={(e) =>
+                      setAnalysis({
+                        ...analysis,
+                        detected_language: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-[#1a1a1a] text-gray-900 dark:text-[#eaeaea] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-white/20"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-[#eaeaea]/70">
+                    Extracted Text
+                  </label>
+                  <textarea
+                    value={analysis.extracted_text || ""}
+                    onChange={(e) =>
+                      setAnalysis({
+                        ...analysis,
+                        extracted_text: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-[#1a1a1a] text-gray-900 dark:text-[#eaeaea] h-28 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-white/20"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-[#eaeaea]/70">
+                    Explanation
+                  </label>
+                  <textarea
+                    value={analysis.explanation || ""}
+                    onChange={(e) =>
+                      setAnalysis({ ...analysis, explanation: e.target.value })
+                    }
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-[#1a1a1a] text-gray-900 dark:text-[#eaeaea] h-28 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-white/20"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-[#eaeaea]/70">
+                    Numerical Data
+                  </label>
+                  <textarea
+                    value={analysis.numerical_data || ""}
+                    onChange={(e) =>
+                      setAnalysis({
+                        ...analysis,
+                        numerical_data: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-[#1a1a1a] text-gray-900 dark:text-[#eaeaea] h-28 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-white/20"
+                  />
+                </div>
+
+                <button
+                  onClick={saveMetadata}
+                  className="w-full py-3 mt-2 rounded-lg bg-gray-900 text-white font-medium hover:bg-gray-700 dark:bg-[#2d2d2d] dark:hover:bg-[#3a3a3a] transition-colors"
+                >
+                  Save Metadata
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <form onSubmit={handleSubmit}>
         <div className="relative flex items-end group">

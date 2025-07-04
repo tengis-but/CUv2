@@ -7,11 +7,11 @@ interface PromptExamplesProps {
 }
 
 const examples = [
-  "Analyze this report",
-  "Explain the key findings",
-  "Compare with industry standards",
-  "Identify potential risks",
-  "Summarize the methodology",
+  "Цагаа хэрхэн бүртгүүлэх вэ?",
+  "Нууц үг нь ямар байх ёстой вэ?",
+  "Ээлжийн амралтын мөнгө яаж авах вэ?",
+  "Премиумд ямар компани байдаг вэ",
+  "Цагаа хэрхэн бүртгүүлэх вэ?",
 ];
 
 const PromptExamples = ({ onExampleClick }: PromptExamplesProps) => {

@@ -1,5 +1,11 @@
 // components/BotMessage.tsx
-import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useImperativeHandle,
+  forwardRef,
+} from "react";
 import { motion } from "framer-motion";
 import clsx from "clsx";
 import { formatMessageTimestamp } from "../utils/dateUtils";
@@ -8,6 +14,7 @@ interface BotMessageProps {
   message: string;
   timestamp?: number;
   isGenerating?: boolean;
+  skipTypingAnimation?: boolean;
   onTypingComplete?: () => void;
 }
 
@@ -32,7 +39,16 @@ const TypingAnimation = () => {
 };
 
 const BotMessage = forwardRef<BotMessageRef, BotMessageProps>(
-  ({ message, timestamp, isGenerating = false, onTypingComplete }, ref) => {
+  (
+    {
+      message,
+      timestamp,
+      isGenerating = false,
+      skipTypingAnimation = false,
+      onTypingComplete,
+    },
+    ref
+  ) => {
     const [displayedText, setDisplayedText] = useState("");
     const [isTyping, setIsTyping] = useState(false);
     const [shouldExpandWidth, setShouldExpandWidth] = useState(false);
@@ -69,6 +85,17 @@ const BotMessage = forwardRef<BotMessageRef, BotMessageProps>(
     }, [displayedText]);
 
     useEffect(() => {
+      if (skipTypingAnimation) {
+        // Immediately show full message without typing effect
+        setDisplayedText(message);
+        setIsTyping(false);
+        if (!completedRef.current) {
+          completedRef.current = true;
+          onTypingComplete && onTypingComplete();
+        }
+        return;
+      }
+
       if (isGenerating || !message || isStopped) {
         return;
       }
@@ -94,7 +121,7 @@ const BotMessage = forwardRef<BotMessageRef, BotMessageProps>(
           setDisplayedText(message); // Show full HTML when done
           finish();
         }
-      }, 50);
+      }, 10);
 
       return () => {
         if (intervalRef.current) {
@@ -102,7 +129,7 @@ const BotMessage = forwardRef<BotMessageRef, BotMessageProps>(
           intervalRef.current = null;
         }
       };
-    }, [message, isGenerating, isStopped]);
+    }, [message, isGenerating, isStopped, skipTypingAnimation]);
 
     return (
       <motion.div
@@ -126,11 +153,6 @@ const BotMessage = forwardRef<BotMessageRef, BotMessageProps>(
               className="text-[15px] leading-relaxed whitespace-pre-wrap break-words"
               dangerouslySetInnerHTML={{ __html: displayedText }}
             />
-          )}
-          {timestamp && (
-            <span className="block mt-1.5 text-xs opacity-60">
-              {formatMessageTimestamp(timestamp)}
-            </span>
           )}
         </div>
       </motion.div>
